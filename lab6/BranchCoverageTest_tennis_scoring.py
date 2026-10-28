@@ -1,0 +1,64 @@
+"""Lab 6, stage 2: cover every decision outcome and negative-point errors."""
+
+import pytest
+from tennis_scoring import game_score, set_winner, match_status
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    (0, 0, "0-0"), (1, 2, "15-30"), (2, 3, "30-40"),
+    (3, 3, "deuce"), (5, 5, "deuce"),
+    (4, 3, "advantage A"), (3, 4, "advantage B"),
+    (5, 3, "game A"), (3, 5, "game B"),
+    (4, 0, "game A"), (0, 4, "game B"),
+])
+def test_game_scores(a, b, expected):
+    assert game_score(a, b) == expected
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    (6, 4, "A"), (4, 6, "B"), (7, 6, "A"), (6, 7, "B"),
+    (3, 2, None), (5, 5, None), (6, 5, None), (6, 6, None),
+])
+def test_set_scores(a, b, expected):
+    assert set_winner(a, b) == expected
+
+
+@pytest.mark.parametrize("a,b,best_of,expected", [
+    (2, 0, 3, "A wins"), (0, 2, 3, "B wins"),
+    (1, 1, 3, "decider"), (0, 0, 3, "in progress"),
+    (3, 1, 5, "A wins"), (1, 3, 5, "B wins"),
+    (2, 2, 5, "decider"), (1, 0, 5, "in progress"),
+])
+def test_match_scores(a, b, best_of, expected):
+    assert match_status(a, b, best_of) == expected
+
+
+@pytest.mark.parametrize("a,b", [(-1, 0), (0, -1), (-1, -1)])
+def test_negative_points(a, b):
+    with pytest.raises(ValueError, match="^negative points$"):
+        game_score(a, b)
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    (7, 7, "deuce"), (8, 7, "advantage A"), (7, 8, "advantage B"),
+    (9, 7, "game A"), (7, 9, "game B"),
+    (3, 0, "40-0"), (0, 3, "0-40"),
+])
+def test_extended_and_boundary_games(a, b, expected):
+    assert game_score(a, b) == expected
+
+
+@pytest.mark.parametrize("a,b,expected", [
+    (5, 4, None), (4, 5, None), (5, 6, None),
+    (8, 6, "A"), (6, 8, "B"), (7, 5, "A"), (5, 7, "B"),
+])
+def test_set_boundaries(a, b, expected):
+    assert set_winner(a, b) == expected
+
+
+@pytest.mark.parametrize("a,b,best_of,expected", [
+    (1, 0, 3, "in progress"), (0, 1, 3, "in progress"),
+    (2, 1, 5, "in progress"), (1, 2, 5, "in progress"),
+])
+def test_match_one_player_near_decider(a, b, best_of, expected):
+    assert match_status(a, b, best_of) == expected
