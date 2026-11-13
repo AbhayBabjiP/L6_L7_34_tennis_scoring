@@ -1,95 +1,79 @@
 
-def parse_score(text):
-    """Parse A-B score and return two integers."""
-    if not isinstance(text, str):
-        return None
-
-    try:
-        parts = text.strip().split('-')
-
-        if len(parts) != 2:
-            return None
-
-        a, b = parts
-
-        if not a.strip() or not b.strip():
-            return None
-
-        a, b = int(a.strip()), int(b.strip())
-
-        if a < 0 or b < 0:
-            return None
-
-        return a, b
-
-    except (ValueError, TypeError):
-        return None
+from hypothesis import given, strategies as st
+from tennis_scoring import parse_score, game_lead, set_spread
 
 
-def game_lead(text):
-    """Calculate the difference between valid tennis points."""
-    if not isinstance(text, str):
-        return None
+# 1. Fuzz testing
 
+@given(st.text() | st.none())
+def test_parse_score_no_crash(s):
+    result = parse_score(s)
+    assert result is None or (
+        isinstance(result, tuple) and len(result) == 2
+    )
+
+
+@given(st.text() | st.none())
+def test_game_lead_no_crash(s):
+    result = game_lead(s)
+    assert result is None or isinstance(result, int)
+
+
+@given(st.text() | st.none())
+def test_set_spread_no_crash(s):
+    result = set_spread(s)
+    assert result is None or isinstance(result, int)
+
+
+# 2. Valid input testing
+
+@given(
+    st.integers(min_value=0, max_value=10000),
+    st.integers(min_value=0, max_value=10000)
+)
+def test_parse_score_valid(a, b):
+    assert parse_score(f"{a}-{b}") == (a, b)
+
+
+@given(
+    st.sampled_from(['0', '15', '30', '40']),
+    st.sampled_from(['0', '15', '30', '40'])
+)
+def test_game_lead_valid(a, b):
     points = {'0': 0, '15': 1, '30': 2, '40': 3}
-
-    try:
-        parts = text.strip().split('-')
-
-        if len(parts) != 2:
-            return None
-
-        first, second = parts
-        first = first.strip()
-        second = second.strip()
-
-        if first not in points or second not in points:
-            return None
-
-        return points[first] - points[second]
-
-    except (ValueError, TypeError):
-        return None
+    assert game_lead(f"{a}-{b}") == points[a] - points[b]
 
 
-def set_spread(games_csv):
-    """Calculate maximum minus minimum games."""
-    if not isinstance(games_csv, str):
-        return None
-
-    try:
-        parts = games_csv.strip().split(',')
-
-        if any(not p.strip() for p in parts):
-            return None
-
-        games = [int(p.strip()) for p in parts]
-
-        if not games or any(g < 0 for g in games):
-            return None
-
-        return max(games) - min(games)
-
-    except (ValueError, TypeError):
-        return None
+@given(
+    st.lists(
+        st.integers(min_value=0, max_value=10000),
+        min_size=1,
+        max_size=50
+    )
+)
+def test_set_spread_valid(games):
+    csv = ','.join(map(str, games))
+    assert set_spread(csv) == max(games) - min(games)
 
 
-def main():
-    print("==== Running parse_score ====")
-    user_input = input("Enter points won as A-B (e.g. 3-2): ")
-    result = parse_score(user_input)
-    print("Points A and B:", result)
+# 3. Edge case testing
 
-    print("\n==== Running game_lead ====")
-    user_input = input("Enter a game score (e.g. 40-30): ")
-    result = game_lead(user_input)
-    print("Lead in Points:", result)
-
-    print("\n==== Running set_spread ====")
-    user_input = input("Enter games won per set as CSV (e.g. 6,4,7): ")
-    result = set_spread(user_input)
-    print("Spread:", result)
+def test_parse_score_edge_cases():
+    assert parse_score("3-2") == (3, 2)
+    assert parse_score("abc-def") is None
+    assert parse_score("1-2-3") is None
+    assert parse_score(None) is None
 
 
-if __name__ == "__main__":
-    main()
+def test_game_lead_edge_cases():
+    assert game_lead("40-30") == 1
+    assert game_lead("10-20") is None
+    assert game_lead(None) is None
+
+
+def test_set_spread_edge_cases():
+    assert set_spread("6,4,7") == 3
+    assert set_spread("5") == 0
+    assert set_spread("") is None
+    assert set_spread("1,,3") is None
+    assert set_spread(None) is None
