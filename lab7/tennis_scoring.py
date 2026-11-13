@@ -1,15 +1,78 @@
+
 def parse_score(text):
-    a, b = text.split('-')
-    return int(a), int(b)
+    """Parse a score in A-B format. Return None for invalid input."""
+    if not isinstance(text, str):
+        return None
+
+    try:
+        parts = text.strip().split('-')
+
+        if len(parts) != 2:
+            return None
+
+        a, b = parts
+
+        if not a.strip() or not b.strip():
+            return None
+
+        a, b = int(a.strip()), int(b.strip())
+
+        if a < 0 or b < 0:
+            return None
+
+        return a, b
+
+    except (ValueError, TypeError):
+        return None
+
 
 def game_lead(text):
+    """Calculate the difference between two valid tennis point scores."""
+    if not isinstance(text, str):
+        return None
+
     points = {'0': 0, '15': 1, '30': 2, '40': 3}
-    first, second = text.split('-')
-    return points[first] - points[second]
+
+    try:
+        parts = text.strip().split('-')
+
+        if len(parts) != 2:
+            return None
+
+        first, second = parts
+        first = first.strip()
+        second = second.strip()
+
+        if first not in points or second not in points:
+            return None
+
+        return points[first] - points[second]
+
+    except (ValueError, TypeError):
+        return None
+
 
 def set_spread(games_csv):
-    games = [int(g) for g in games_csv.split(',')]
-    return max(games) - min(games)
+    """Calculate the difference between maximum and minimum games."""
+    if not isinstance(games_csv, str):
+        return None
+
+    try:
+        parts = games_csv.strip().split(',')
+
+        if not parts or any(not p.strip() for p in parts):
+            return None
+
+        games = [int(p.strip()) for p in parts]
+
+        if any(g < 0 for g in games):
+            return None
+
+        return max(games) - min(games)
+
+    except (ValueError, TypeError):
+        return None
+
 
 def main():
     print("==== Running parse_score ====")
@@ -26,6 +89,7 @@ def main():
     user_input = input("Enter games won per set as CSV (e.g. 6,4,7): ")
     result = set_spread(user_input)
     print("Spread:", result)
+
 
 if __name__ == "__main__":
     main()
